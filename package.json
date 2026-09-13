@@ -1,0 +1,55 @@
+{
+  "name": "babylon-pathtracer",
+  "version": "0.1.0",
+  "description": "Progressive GPU path tracer (Cycles-style) as a Babylon.js plugin: scene-agnostic ingestion, first-hit AOVs, firefly clamping, GPU a-trous and OIDN denoise hooks, reproducible sampling and PNG export.",
+  "license": "CC0-1.0",
+  "type": "module",
+  "sideEffects": true,
+  "main": "./dist/pt_lib.esm.js",
+  "module": "./dist/pt_lib.esm.js",
+  "types": "./dist/pt_lib.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/pt_lib.d.ts",
+      "import": "./dist/pt_lib.esm.js",
+      "default": "./dist/pt_lib.esm.js"
+    },
+    "./iife": "./dist/pt_lib.iife.js",
+    "./core": "./dist/pt_lib.core.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "src",
+    "!src/scenes/**/*_Path_Tracing.js",
+    "!src/scenes/**/*_Model.js",
+    "!src/scenes/gltf-debug/**",
+    "vendor/README.md",
+    "README.md",
+    "PT_README.md",
+    "LICENSE",
+    "CREDITS.md"
+  ],
+  "peerDependencies": {
+    "@babylonjs/core": ">=6 <10"
+  },
+  "scripts": {
+    "build": "node tools/build-core.mjs && node tools/build-dist.mjs",
+    "test": "node tools/verify-m2.mjs && node tools/test-ingest.mjs && node tools/test-lifecycle.mjs && node tools/test-support.mjs && node tools/test-worker.mjs && node tools/test-denoise.mjs && node tools/test-dist.mjs"
+  },
+  "keywords": [
+    "babylonjs",
+    "babylon.js",
+    "path-tracing",
+    "pathtracer",
+    "raytracing",
+    "webgl2",
+    "gpu",
+    "renderer",
+    "denoise",
+    "oidn"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}

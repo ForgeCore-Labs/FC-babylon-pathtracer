@@ -1,0 +1,19 @@
+CC0 1.0 Universal (CC0 1.0) Public Domain Dedication
+
+The contents of this package (the "Work") are dedicated to the public domain
+under the Creative Commons CC0 1.0 Universal Public Domain Dedication.
+
+To the extent possible under law, the author(s) have waived all copyright and
+related or neighboring rights to the Work. You should have received a copy of
+the legal code along with the Work; if not, see:
+
+    https://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+The Work is provided "as-is", without warranty of any kind, express or implied,
+including but not limited to the warranties of merchantability, fitness for a
+particular purpose and noninfringement. In no event shall the authors be liable
+for any claim, damages or other liability arising from the Work or its use.
+
+Note: this library is a port of an upstream Babylon.js path tracer and includes
+snippets derived from third-party sources. See CREDITS.md. Confirm the upstream
+terms before publishing.

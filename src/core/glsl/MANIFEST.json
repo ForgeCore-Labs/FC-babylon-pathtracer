@@ -1,0 +1,182 @@
+[
+  {
+    "order": 1,
+    "store": "ShadersStore",
+    "name": "screenCopyFragmentShader",
+    "file": "src/core/glsl/shaders/screenCopyFragmentShader.js"
+  },
+  {
+    "order": 2,
+    "store": "ShadersStore",
+    "name": "screenOutputFragmentShader",
+    "file": "src/core/glsl/shaders/screenOutputFragmentShader.js"
+  },
+  {
+    "order": 3,
+    "store": "IncludesShadersStore",
+    "name": "pathtracing_defines_and_uniforms",
+    "file": "src/core/glsl/includes/pathtracing_defines_and_uniforms.js"
+  },
+  {
+    "order": 4,
+    "store": "IncludesShadersStore",
+    "name": "pathtracing_physical_sky_defines",
+    "file": "src/core/glsl/includes/pathtracing_physical_sky_defines.js"
+  },
+  {
+    "order": 5,
+    "store": "IncludesShadersStore",
+    "name": "pathtracing_physical_sky_functions",
+    "file": "src/core/glsl/includes/pathtracing_physical_sky_functions.js"
+  },
+  {
+    "order": 6,
+    "store": "IncludesShadersStore",
+    "name": "pathtracing_random",
+    "file": "src/core/glsl/includes/pathtracing_random.js"
+  },
+  {
+    "order": 7,
+    "store": "IncludesShadersStore",
+    "name": "pathtracing_calc_fresnel",
+    "file": "src/core/glsl/includes/pathtracing_calc_fresnel.js"
+  },
+  {
+    "order": 8,
+    "store": "IncludesShadersStore",
+    "name": "pathtracing_sample_axis_aligned_quad_light",
+    "file": "src/core/glsl/includes/pathtracing_sample_axis_aligned_quad_light.js"
+  },
+  {
+    "order": 9,
+    "store": "IncludesShadersStore",
+    "name": "pathtracing_sample_sphere_light",
+    "file": "src/core/glsl/includes/pathtracing_sample_sphere_light.js"
+  },
+  {
+    "order": 10,
+    "store": "IncludesShadersStore",
+    "name": "pathtracing_solve_quadratic",
+    "file": "src/core/glsl/includes/pathtracing_solve_quadratic.js"
+  },
+  {
+    "order": 11,
+    "store": "IncludesShadersStore",
+    "name": "pathtracing_sphere_intersect",
+    "file": "src/core/glsl/includes/pathtracing_sphere_intersect.js"
+  },
+  {
+    "order": 12,
+    "store": "IncludesShadersStore",
+    "name": "pathtracing_unit_bounding_sphere_intersect",
+    "file": "src/core/glsl/includes/pathtracing_unit_bounding_sphere_intersect.js"
+  },
+  {
+    "order": 13,
+    "store": "IncludesShadersStore",
+    "name": "pathtracing_unit_sphere_intersect",
+    "file": "src/core/glsl/includes/pathtracing_unit_sphere_intersect.js"
+  },
+  {
+    "order": 14,
+    "store": "IncludesShadersStore",
+    "name": "pathtracing_unit_cylinder_intersect",
+    "file": "src/core/glsl/includes/pathtracing_unit_cylinder_intersect.js"
+  },
+  {
+    "order": 15,
+    "store": "IncludesShadersStore",
+    "name": "pathtracing_unit_cone_intersect",
+    "file": "src/core/glsl/includes/pathtracing_unit_cone_intersect.js"
+  },
+  {
+    "order": 16,
+    "store": "IncludesShadersStore",
+    "name": "pathtracing_unit_paraboloid_intersect",
+    "file": "src/core/glsl/includes/pathtracing_unit_paraboloid_intersect.js"
+  },
+  {
+    "order": 17,
+    "store": "IncludesShadersStore",
+    "name": "pathtracing_unit_hyperboloid_intersect",
+    "file": "src/core/glsl/includes/pathtracing_unit_hyperboloid_intersect.js"
+  },
+  {
+    "order": 18,
+    "store": "IncludesShadersStore",
+    "name": "pathtracing_unit_capsule_intersect",
+    "file": "src/core/glsl/includes/pathtracing_unit_capsule_intersect.js"
+  },
+  {
+    "order": 19,
+    "store": "IncludesShadersStore",
+    "name": "pathtracing_unit_flattened_ring_intersect",
+    "file": "src/core/glsl/includes/pathtracing_unit_flattened_ring_intersect.js"
+  },
+  {
+    "order": 20,
+    "store": "IncludesShadersStore",
+    "name": "pathtracing_unit_box_intersect",
+    "file": "src/core/glsl/includes/pathtracing_unit_box_intersect.js"
+  },
+  {
+    "order": 21,
+    "store": "IncludesShadersStore",
+    "name": "pathtracing_pyramid_frustum_intersect",
+    "file": "src/core/glsl/includes/pathtracing_pyramid_frustum_intersect.js"
+  },
+  {
+    "order": 22,
+    "store": "IncludesShadersStore",
+    "name": "pathtracing_unit_disk_intersect",
+    "file": "src/core/glsl/includes/pathtracing_unit_disk_intersect.js"
+  },
+  {
+    "order": 23,
+    "store": "IncludesShadersStore",
+    "name": "pathtracing_unit_rectangle_intersect",
+    "file": "src/core/glsl/includes/pathtracing_unit_rectangle_intersect.js"
+  },
+  {
+    "order": 24,
+    "store": "IncludesShadersStore",
+    "name": "pathtracing_unit_torus_intersect",
+    "file": "src/core/glsl/includes/pathtracing_unit_torus_intersect.js"
+  },
+  {
+    "order": 25,
+    "store": "IncludesShadersStore",
+    "name": "pathtracing_quad_intersect",
+    "file": "src/core/glsl/includes/pathtracing_quad_intersect.js"
+  },
+  {
+    "order": 26,
+    "store": "IncludesShadersStore",
+    "name": "pathtracing_boundingbox_intersect",
+    "file": "src/core/glsl/includes/pathtracing_boundingbox_intersect.js"
+  },
+  {
+    "order": 27,
+    "store": "IncludesShadersStore",
+    "name": "pathtracing_bvhTriangle_intersect",
+    "file": "src/core/glsl/includes/pathtracing_bvhTriangle_intersect.js"
+  },
+  {
+    "order": 28,
+    "store": "IncludesShadersStore",
+    "name": "pathtracing_bvhDoubleSidedTriangle_intersect",
+    "file": "src/core/glsl/includes/pathtracing_bvhDoubleSidedTriangle_intersect.js"
+  },
+  {
+    "order": 29,
+    "store": "IncludesShadersStore",
+    "name": "pathtracing_default_main",
+    "file": "src/core/glsl/includes/pathtracing_default_main.js"
+  },
+  {
+    "order": 30,
+    "store": "ShadersStore",
+    "name": "screenResolveFragmentShader",
+    "file": "src/core/glsl/shaders/screenResolveFragmentShader.js"
+  }
+]
