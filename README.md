@@ -158,10 +158,14 @@ exmaples/   the runnable demo (test.html + GUI.js + demo.css)
 textures/   the demo's assets — blue-noise texture, HDR environment, test.glb
 ```
 
+## Credits
+
+Based on the [Three.js Path Tracing Renderer](https://github.com/erichlof/THREE.js-PathTracing-Renderer)
+by [Erich (@erichlof)](https://github.com/erichlof), ported to Babylon.js by
+[@PichouPichou](https://github.com/PichouPichou). See [`CREDITS.md`](./CREDITS.md).
+
 ## Licensing
 
 CC0-1.0 — see [`LICENSE`](./LICENSE) and [`CREDITS.md`](./CREDITS.md). The
 library is a port of an existing Babylon.js path tracer; upstream is CC0 with
 Shadertoy-derived snippets credited in `CREDITS.md`.
-
-If you are republishing, confirm the upstream terms in `CREDITS.md` first.

@@ -6,11 +6,14 @@ and sources the code derives from.
 
 ## Upstream
 
-- **Babylon.js Path Tracing Renderer** — Erich Loftis (erichlof). The original
-  path tracer this library is ported from; its `PathTracingCommon.js` was split
-  into `src/core/glsl/` by `tools/split-glsl.mjs`.
+- **Three.js Path Tracing Renderer** — Erich ([@erichlof](https://github.com/erichlof)),
+  the original renderer this library derives from. It was ported to Babylon.js by
+  [@PichouPichou](https://github.com/PichouPichou) and contributors; that port's
+  `PathTracingCommon.js` was split into `src/core/glsl/` by
+  `tools/split-glsl.mjs`, and the rest was refactored into the modules under
+  `src/`.
 - **BVH (Surface Area Heuristic)** — `src/core/bvh/BVH_SAH_Quality_Builder.js`
-  is a JavaScript port by Erich Loftis of a C++ builder inspired by Thanassis
+  is a JavaScript port by Erich of a C++ builder inspired by Thanassis
   Tsiodras (ttsiodras), `renderer-cuda/src/BVH.cpp`.
 
 ## Shadertoy / snippets
@@ -32,13 +35,11 @@ of the published package (`package.json` -> `files` excludes `exmaples/` and
 `textures/`).
 
 - **`BlueNoise_RGBA256.png`** — the tracer's required blue-noise texture.
-- **`symmetrical_garden_2k.hdr`** — a third-party equirectangular environment
-  map used for image-based lighting in the demo. **Confirm its source and licence
-  before redistributing.**
+- **`symmetrical_garden_2k.hdr`** — an open-source equirectangular environment
+  map used for image-based lighting in the demo.
 - **`test.glb`** — the demo's test model.
 
 ---
 
-**Before publishing:** verify each upstream licence (the roadmap records the
-upstream as CC0, with Shadertoy snippets credited above) and confirm the
-repository's `LICENSE` choice matches it.
+**Before publishing:** the upstream is CC0 and the Shadertoy snippets are
+credited above — keep this file in sync when adding third-party code or assets.
