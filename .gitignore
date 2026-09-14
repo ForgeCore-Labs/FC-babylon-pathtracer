@@ -1,24 +1,25 @@
-# Nestjs specific
-/dist
-/node_modules
-/build
-/tmp
+# Dependencies
+node_modules/
 
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-lerna-debug.log*
 
-# dotenv environment variable files
+# Env
 .env
-.env.development
-.env.test
-.env.production
+.env.*
 
-# temp directory
-.temp
-.tmp
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# NOTE: dist/ is deliberately NOT ignored. It holds the prebuilt bundles
+# (pt_lib.esm.js / pt_lib.iife.js / pt_lib.core.js) plus the hand-written
+# pt_lib.d.ts, and is committed so <script> and CDN users get a working build.
+# Rebuild with `npm run build` and commit dist/ alongside any change under src/.

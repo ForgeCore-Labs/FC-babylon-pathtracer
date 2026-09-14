@@ -1,8 +1,7 @@
-// pt_lib — denoise: GPU à-trous (edge-avoiding wavelet) filter.
+// pt_lib — denoise: GPU a-trous (edge-avoiding wavelet) filter.
 //
-// The second denoise backend (M6). Unlike the OIDN path it is a *hook*, not a
-// `denoiser`: it is pure GPU, runs per frame while the image converges, and does
-// zero readback.
+// A *hook*, not a `denoiser`: it is pure GPU, runs per frame while the image
+// converges, and does zero readback.
 //
 //   pt.setDenoise(PT_LIB.denoise.aTrous({ iterations: 3 }));
 //
@@ -124,7 +123,7 @@
 		);
 	}
 
-	// Returns a denoise hook (see PT_README -> Denoise hook). options:
+	// Returns a denoise hook (see USAGE.md -> "Adding a-trous denoise"). options:
 	//   iterations? (1..6, default 3)   step? (first-pass step in pixels, default 1)
 	//   phiNormal? (default 128)  phiAlbedo? (32)  phiDepth? (32)
 	// All of them stay live-tunable through hook.setParams({...}).

@@ -512,6 +512,36 @@
 		// Vertex data is copied when it is going to a worker: transferring a view
 		// into a Babylon buffer would detach the scene's own geometry.
 		var meshData = [];
+
+		function pushMeshData(positions, normals, uvs, indices, world, material, triangleCount) {
+			meshData.push({
+				positions: copyForTransfer ? positions.slice() : positions,
+				normals: copyForTransfer && normals ? normals.slice() : (normals || null),
+				uvs: copyForTransfer && uvs ? uvs.slice() : (uvs || null),
+				indices: indices && indices.length
+					? (copyForTransfer ? indices.slice() : indices)
+					: null,
+				matrix: copyForTransfer ? { m: world.m.slice() } : world,
+				materialIndex: materialIndexOf(material),
+				triangleCount: triangleCount
+			});
+		}
+
+		// A glTF mesh with several primitives arrives as ONE Babylon mesh with
+		// submeshes and a MultiMaterial. Taking one material per mesh would read the
+		// MultiMaterial (no albedo/metallic/roughness) and flatten every primitive
+		// onto the fallback material, so split those meshes into one entry per
+		// submesh, each carrying its own sub-material and index range.
+		function subMeshRange(sub) {
+			var indexed = typeof sub.indexCount === 'number' && sub.indexCount > 0;
+			return indexed
+				? { start: sub.indexStart, count: sub.indexCount }
+				: { start: sub.verticesStart, count: sub.verticesCount };
+		}
+		function subMeshTriangles(sub) {
+			return Math.floor(subMeshRange(sub).count / 3);
+		}
+
 		for (i = 0; i < meshes.length; i++) {
 			var mesh = meshes[i];
 			if (!isTraceable(mesh)) continue;
@@ -523,17 +553,50 @@
 			var uvs = mesh.getVerticesData('uv');
 			var indices = mesh.getIndices();
 
-			meshData.push({
-				positions: copyForTransfer ? positions.slice() : positions,
-				normals: copyForTransfer && normals ? normals.slice() : (normals || null),
-				uvs: copyForTransfer && uvs ? uvs.slice() : (uvs || null),
-				indices: indices && indices.length
-					? (copyForTransfer ? indices.slice() : indices)
-					: null,
-				matrix: copyForTransfer ? { m: world.m.slice() } : world,
-				materialIndex: materialIndexOf(mesh.material),
-				triangleCount: triangleCountOf(mesh)
-			});
+			var subMaterials = mesh.material ? mesh.material.subMaterials : null;
+			var subs =
+				subMaterials && subMaterials.length > 1 ? mesh.subMeshes || null : null;
+
+			if (subs && subs.length > 0) {
+				// Only trust the split when the submeshes cover the whole mesh,
+				// otherwise the sum would not match the counted `totalTriangles`.
+				var sum = 0;
+				var s;
+				for (s = 0; s < subs.length; s++) sum += subMeshTriangles(subs[s]);
+				if (sum !== triangleCountOf(mesh)) subs = null;
+			}
+
+			if (subs) {
+				if (!indices || !indices.length) {
+					// Non-indexed: synthesize vertex ids so a submesh range can slice.
+					var vertexCount = positions.length / 3;
+					indices =
+						vertexCount > 65535
+							? new Uint32Array(vertexCount)
+							: new Uint16Array(vertexCount);
+					for (var v = 0; v < vertexCount; v++) indices[v] = v;
+				}
+				for (var n = 0; n < subs.length; n++) {
+					var sub = subs[n];
+					var range = subMeshRange(sub);
+					var subMaterial =
+						subMaterials[Math.min(sub.materialIndex, subMaterials.length - 1)];
+					pushMeshData(
+						positions,
+						normals,
+						uvs,
+						indices.slice(range.start, range.start + range.count),
+						world,
+						subMaterial,
+						subMeshTriangles(sub)
+					);
+				}
+				continue;
+			}
+
+			pushMeshData(
+				positions, normals, uvs, indices, world, mesh.material, triangleCountOf(mesh)
+			);
 		}
 
 		return {

@@ -271,7 +271,7 @@ pt.renderFrame();
 check("sync denoise hook becomes the tonemap input",
   pt._outputEffect.effect.calls.resolvedBuffer === fakeDenoised);
 
-// Async hook (the one-shot OIDN shape): adopt the texture when it resolves.
+// Async hook (the one-shot readback shape): adopt the texture when it resolves.
 // Clear the previous hook's result first, otherwise the pipeline would keep
 // showing it while the new request is pending.
 pt._denoiseResult = null;

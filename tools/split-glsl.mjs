@@ -1,12 +1,14 @@
 // One-time extraction tool for pt_lib.
 //
-// Splits the monolithic js/PathTracingCommon.js (1573 lines: two full fragment
-// shaders + many GLSL includes, all registered into BABYLON shader stores)
-// into one clean file per snippet under src/core/glsl/.
+// Splits the monolithic upstream PathTracingCommon.js (two full fragment shaders
+// + many GLSL includes, all registered into BABYLON shader stores) into one clean
+// file per snippet under src/core/glsl/.
 //
-// The original js/ file is only read, never modified.
+// The upstream file is only read, never modified. It is not shipped in this repo,
+// so this tool only runs when you are re-extracting the GLSL: put the original
+// PathTracingCommon.js at reference/PathTracingCommon.js first.
 //
-// Usage:  node pt_lib/tools/split-glsl.mjs
+// Usage:  node tools/split-glsl.mjs
 
 import fs from "node:fs";
 import path from "node:path";
@@ -14,8 +16,18 @@ import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, ".."); // pt_lib/
-const srcFile = path.resolve(root, "..", "js", "PathTracingCommon.js");
+const srcFile = path.resolve(root, "reference", "PathTracingCommon.js");
 const outRoot = path.join(root, "src", "core", "glsl");
+
+if (!fs.existsSync(srcFile)) {
+  console.error(
+    "Missing " + srcFile + ".\n" +
+    "This tool re-extracts the GLSL from the upstream original, which is not\n" +
+    "shipped in this repo. Put the upstream PathTracingCommon.js at\n" +
+    "reference/PathTracingCommon.js and run it again."
+  );
+  process.exit(1);
+}
 
 const text = fs.readFileSync(srcFile, "utf8");
 
@@ -58,7 +70,7 @@ for (const e of entries) {
 
   const header = [
     "// pt_lib — GLSL " + (isShader ? "fragment shader" : "include") + ": " + e.name,
-    "// Extracted from js/PathTracingCommon.js (original left untouched).",
+    "// Extracted from the upstream PathTracingCommon.js (original left untouched).",
     "// Registers into pt_lib's own GLSL registry (PT_LIB.glsl), not Babylon's",
     "// global shader stores, so scenes cannot clobber one another.",
     "",

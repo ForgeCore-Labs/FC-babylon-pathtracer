@@ -1,13 +1,12 @@
-// Headless tests for the M6 denoise integration (src/denoise/oidn.js).
+// Headless tests for the denoise integration (src/denoise/).
 //
-// The real OIDN WASM binary is browser-side and caller-supplied, so this pins
-// the two things that can be checked without it:
-//   1. the OIDN C-API driver calls the right functions with the right formats,
-//      strides and flags, and returns the filter output;
-//   2. the hook contract — one-shot on convergence, cached per accumulation,
-//      re-run after reset, identity on error.
+// Covers the two pieces that can be checked without a browser:
+//   1. the one-shot hook contract (src/denoise/hook.js) — runs on convergence,
+//      cached per accumulation, re-run after reset, identity on error;
+//   2. the GPU a-trous filter (src/denoise/atrous.js) — passes, ping-pong, AOV
+//      binding, live setParams, converged caching.
 //
-// Usage:  node pt_lib/tools/test-denoise.mjs
+// Usage:  node tools/test-denoise.mjs
 
 import fs from "node:fs";
 import path from "node:path";
@@ -94,58 +93,9 @@ globalThis.BABYLON = {
 function load(rel) {
   new Function(fs.readFileSync(path.join(root, rel), "utf8"))();
 }
-load("src/denoise/oidn.js");
+load("src/denoise/hook.js");
 load("src/denoise/atrous.js");
 const denoise = globalThis.PT_LIB.denoise;
-
-// A fake Emscripten module exposing the OIDN C API with `_name` exports.
-function makeFakeOidnModule() {
-  const heapBytes = 1 << 20;
-  const buffer = new ArrayBuffer(heapBytes);
-  let bump = 16;
-  const calls = {
-    newDevice: [],
-    newFilter: [],
-    setImage: [],
-    setFilter1b: [],
-    commit: 0,
-    execute: 0,
-    freed: 0,
-  };
-  const module = {
-    HEAPF32: new Float32Array(buffer),
-    _malloc(size) {
-      const ptr = bump;
-      bump += (size + 15) & ~15;
-      return ptr;
-    },
-    _free() { calls.freed++; },
-    _oidnNewDevice(type) { calls.newDevice.push(type); return 111; },
-    _oidnCommitDevice() {},
-    _oidnNewFilter(device, type) { calls.newFilter.push(type); return 222; },
-    _oidnSetFilter1b(filter, name, value) { calls.setFilter1b.push([name, value]); },
-    _oidnSetSharedFilterImage(f, name, ptr, format, w, h, off, ps, rs) {
-      calls.setImage.push({ name, ptr, format, w, h, off, ps, rs });
-      if (name === "output") module.__outPtr = ptr;
-    },
-    _oidnCommitFilter() { calls.commit++; },
-    _oidnExecuteFilter() {
-      calls.execute++;
-      const out = module.HEAPF32;
-      const base = module.__outPtr >>> 2;
-      for (let i = 0; i < module.__pixels; i++) {
-        out[base + i * 3 + 0] = 0.25;
-        out[base + i * 3 + 1] = 0.5;
-        out[base + i * 3 + 2] = 0.75;
-      }
-    },
-    _oidnGetDeviceError() { return 0; },
-    _oidnReleaseFilter() {},
-    _oidnReleaseDevice() {},
-  };
-  module.__pixels = 4;
-  return { module, calls };
-}
 
 const W = 2;
 const H = 2;
@@ -176,71 +126,7 @@ function makeCtx(overrides) {
 }
 
 // ------------------------------------------------------------------- tests
-console.log("OIDN C-API driver\n");
-
-{
-  const { module, calls } = makeFakeOidnModule();
-  const driver = denoise.oidn(module);
-  const out = await driver.denoise({
-    color: rgba(1),
-    albedo: rgba(0.5),
-    normal: rgba(0.25),
-    width: W,
-    height: H,
-  });
-
-  check("device is created on the CPU", calls.newDevice[0] === 0);
-  check("a ray-tracing (RT) filter is created", calls.newFilter[0] === "RT");
-  check("HDR is enabled by default",
-    calls.setFilter1b.some((c) => c[0] === "HDR" && c[1] === 1));
-
-  const color = calls.setImage.find((i) => i.name === "color");
-  check("color is FLOAT3 with the RGBA pixel stride",
-    color && color.format === 3 && color.ps === 16 && color.rs === W * 16 &&
-    color.w === W && color.h === H, JSON.stringify(color));
-  check("albedo and normal are fed too",
-    calls.setImage.some((i) => i.name === "albedo") &&
-    calls.setImage.some((i) => i.name === "normal"));
-  check("depth is not fed unless requested",
-    !calls.setImage.some((i) => i.name === "depth"));
-
-  const output = calls.setImage.find((i) => i.name === "output");
-  check("output is packed FLOAT3",
-    output && output.format === 3 && output.ps === 12 && output.rs === W * 12);
-  check("filter is committed and executed once",
-    calls.commit === 1 && calls.execute === 1);
-  check("the filter output is returned",
-    out.length === W * H * 3 && out[0] === 0.25 && out[1] === 0.5 && out[2] === 0.75);
-}
-
-{
-  const { module, calls } = makeFakeOidnModule();
-  const driver = denoise.oidn(module, { hdr: false });
-  await driver.denoise({ color: rgba(1), width: W, height: H });
-  check("hdr: false is forwarded",
-    calls.setFilter1b.some((c) => c[0] === "HDR" && c[1] === 0));
-
-  const { module: m2, calls: c2 } = makeFakeOidnModule();
-  const withDepth = denoise.oidn(m2);
-  await withDepth.denoise({ color: rgba(1), depth: rgba(2), width: W, height: H });
-  const depth = c2.setImage.find((i) => i.name === "depth");
-  check("depth is fed as a single float per pixel",
-    depth && depth.format === 1 && depth.ps === 16, JSON.stringify(depth));
-
-  let missing = null;
-  try {
-    await denoise.oidn({}).denoise({ color: rgba(1), width: W, height: H });
-  } catch (e) {
-    missing = e.message;
-  }
-  check("a module without the OIDN API fails clearly",
-    !!missing && /missing/.test(missing), missing);
-
-  driver.dispose();
-  check("dispose frees the buffers", calls.freed > 0);
-}
-
-console.log("\nDenoise hook (one-shot)\n");
+console.log("Denoise hook (one-shot)\n");
 
 {
   const stub = {

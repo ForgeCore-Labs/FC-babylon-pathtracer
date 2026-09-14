@@ -1,0 +1,109 @@
+html, body {
+	overflow: hidden;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	padding: 0;
+	background: #000;
+}
+
+#renderCanvas {
+	width: 100%;
+	height: 100%;
+	touch-action: none;
+	outline: none;
+}
+
+#info {
+	position: fixed;
+	top: 8px;
+	width: 100%;
+	text-align: center;
+	font-family: monospace;
+	font-size: medium;
+	color: #fff;
+	pointer-events: none;
+	user-select: none;
+	text-shadow: 0 0 4px #000;
+}
+
+#help {
+	position: fixed;
+	left: 1%;
+	bottom: 2%;
+	font-family: monospace;
+	font-size: small;
+	color: rgb(200, 200, 200);
+	pointer-events: none;
+	user-select: none;
+	text-shadow: 0 0 4px #000;
+}
+
+#ui {
+	position: fixed;
+	right: 10px;
+	top: 10px;
+	font-family: monospace;
+	font-size: 12px;
+	color: #ddd;
+	background: rgba(0, 0, 0, 0.55);
+	border: 1px solid rgba(255, 255, 255, 0.15);
+	padding: 10px 12px;
+	border-radius: 6px;
+	user-select: none;
+}
+
+#ui label { display: block; margin-bottom: 6px; }
+#ui select, #ui input {
+	background: #111;
+	color: #eee;
+	border: 1px solid #444;
+	font-family: monospace;
+}
+#ui button {
+	background: #222;
+	color: #eee;
+	border: 1px solid #444;
+	padding: 2px 10px;
+	cursor: pointer;
+	font-family: monospace;
+}
+
+#lightIcons {
+	position: fixed;
+	inset: 0;
+	overflow: hidden;
+	pointer-events: none;
+}
+
+.pt-light-icon {
+	position: absolute;
+	width: 16px;
+	height: 16px;
+	margin: -8px 0 0 -8px;
+	border: 2px solid currentColor;
+	border-radius: 50%;
+	box-sizing: border-box;
+	display: none;
+	color: #fff;
+}
+
+.pt-light-icon::after {
+	content: '';
+	position: absolute;
+	inset: 3px;
+	border-radius: 50%;
+	background: currentColor;
+}
+
+.pt-light-name {
+	position: absolute;
+	left: 20px;
+	top: -2px;
+	font-family: monospace;
+	font-size: 11px;
+	line-height: 16px;
+	white-space: nowrap;
+	color: currentColor;
+	text-shadow: 0 0 3px #000, 0 0 3px #000;
+}

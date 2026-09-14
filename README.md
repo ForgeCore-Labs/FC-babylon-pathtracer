@@ -1,23 +1,89 @@
 # babylon-pathtracer
 
 A **Cycles-style progressive GPU path tracer** for Babylon.js — scene-agnostic
-ingestion, first-hit AOVs, firefly clamping, GPU à-trous and OIDN denoise hooks,
-reproducible sampling and PNG export.
+ingestion, first-hit AOVs, firefly clamping, GPU a-trous denoise, reproducible
+sampling and PNG export.
 
-Full documentation: **[`PT_README.md`](./PT_README.md)**.
-Design + roadmap: **[`../develop.md`](../develop.md)**.
-Resume notes: **[`../HANDOFF.md`](../HANDOFF.md)**.
+Build a scene the normal Babylon way (`MeshBuilder`, `PBRMaterial`, lights,
+glTF, `scene.environmentTexture`), hand it to the library, and it path-traces it
+on the GPU with progressive sample accumulation.
 
-## Install
+Usage guide and settings reference: **[`USAGE.md`](./USAGE.md)**.
+
+---
+
+## Requirements
+
+- **Node ≥ 18** — only for the local demo server and the build. There is
+  **nothing to `npm install`** to build, test, or run the demo.
+- **A browser with WebGL2** and float render targets (WebGL1 is not supported).
+- **Internet access for the demo** — it loads Babylon from a CDN.
+
+---
+
+## Start here
+
+### 1. Run the demo
+
+Serve the **repo root** over HTTP, then open the demo page:
 
 ```sh
-npm install babylon-pathtracer @babylonjs/core
+npx serve .                    # or: python -m http.server 3000
 ```
 
-`@babylonjs/core` is a peer dependency. The package is **ESM-only** (there is no
-CommonJS build) — use the IIFE bundle for classic `<script>` usage.
+Open **<http://localhost:3000/exmaples/test.html>**.
 
-## Usage (ESM)
+You get a procedural scene (ground, a row of spheres, coloured lights) with a
+live control panel: view modes, AOVs, a-trous denoise, firefly clamp,
+seed, material edits, light toggles, post-process and PNG export. The tracer's
+one asset — the blue-noise texture — is read from `textures/`.
+
+> Serve over **HTTP, not `file://`**. On `file://` the texture fetch fails and
+> the geometry Web Worker is blocked.
+
+### 2. Build and test
+
+```sh
+npm run build     # -> dist/pt_lib.core.js, dist/pt_lib.esm.js, dist/pt_lib.iife.js
+npm test          # seven headless suites (Babylon is mocked)
+```
+
+Two things worth knowing:
+
+- It is **`npm run build`**, not `npm build`. `build` is a script in
+  `package.json`; npm only maps a handful of names (`test`, `start`, …) to bare
+  commands. `npm run` on its own lists every available script.
+- **`dist/` is committed on purpose**, so `<script>` / CDN users get a working
+  bundle. Rebuild after editing anything in `src/` and commit the regenerated
+  `dist/` in the same commit.
+
+---
+
+## Use it in your project
+
+The package is **not on the npm registry yet**. Until the first publish, consume
+it one of three ways:
+
+**a) A `file:` dependency** (best while developing against it)
+
+```sh
+npm install @babylonjs/core
+npm install /path/to/babylon-pathtracer
+```
+
+**b) A packed tarball**
+
+```sh
+npm pack                       # in this repo -> babylon-pathtracer-0.1.0.tgz
+npm install /path/to/babylon-pathtracer-0.1.0.tgz
+```
+
+**c) The IIFE bundle, no install at all** — see *Script tag* below.
+
+`@babylonjs/core` is a peer dependency. The package is **ESM-only** (there is no
+CommonJS build); use the IIFE bundle for classic `<script>` usage.
+
+### ESM
 
 ```js
 import { PT_LIB } from "babylon-pathtracer";
@@ -33,7 +99,7 @@ const app = PT_LIB.scenes.universal.create(canvas, {
   }
 });
 
-// optional: GPU denoise (no extra dependency)
+// optional: GPU denoise (ships with the library)
 app.pathTracer.setDenoise(PT_LIB.denoise.aTrous({ iterations: 3 }));
 
 // optional: reproducibility + a still
@@ -41,23 +107,27 @@ app.pathTracer.setSeed(7);
 await app.pathTracer.exportImage({ download: true, aovs: true });
 ```
 
-The library attaches to the global as `PT_LIB` (and `BABYLON.PathTracer`), which
-is why the example above can reference the `BABYLON` you imported globally. If
-you prefer explicit imports, the ESM entry also re-exports `PathTracer`,
-`scenes`, `denoise`, `glsl`, `ingestScene` and `buildScenePrelude`.
+The library also attaches to the global as `PT_LIB` (and `BABYLON.PathTracer`),
+which is why the snippet above can keep using `BABYLON.*`. Prefer explicit
+imports? The ESM entry also re-exports `PathTracer`, `scenes`, `denoise`,
+`glsl`, `ingestScene` and `buildScenePrelude`.
 
-## Usage (script tag / IIFE)
+### Script tag (IIFE)
+
+The IIFE bundle contains everything — GLSL, the BVH, ingestion, both denoisers
+and the inlined worker sources — so it is the only library script you need:
 
 ```html
 <script src="https://cdn.babylonjs.com/babylon.max.js"></script>
-<script src="https://unpkg.com/babylon-pathtracer/dist/pt_lib.iife.js"></script>
+<script src="dist/pt_lib.iife.js"></script>
 <script>
   const app = PT_LIB.scenes.universal.create(canvas, { /* ... */ });
 </script>
 ```
 
-The IIFE build needs a global `BABYLON` (load Babylon first) and exposes
-`window.PT_LIB`.
+It needs a global `BABYLON` (load Babylon first) and exposes `window.PT_LIB`.
+
+---
 
 ## What you get
 
@@ -66,35 +136,32 @@ The IIFE build needs a global `BABYLON` (load Babylon first) and exposes
 | **Ingestion** | Ordinary Babylon meshes / `PBRMaterial` / `StandardMaterial` / lights / `environmentTexture` — no hardcoded scene content. A Web Worker does the packing + BVH build by default. |
 | **Render** | Progressive accumulation, `imageProcessingConfiguration` tonemap, a post-process chain after the tonemap. |
 | **Quality** | Specular NEE, IBL, `fireflyClamp`, reproducible `seed`. |
-| **Denoise** | `PT_LIB.denoise.aTrous()` (GPU, zero readback) and an OIDN hook over a caller-supplied WASM module. |
+| **Denoise** | `PT_LIB.denoise.aTrous()` — a GPU edge-aware filter over the AOVs, zero readback, live-tunable. |
 | **Output** | `exportImage()` → PNG of beauty ± the albedo / normal / depth AOVs. |
 
 ## Denoise
 
 ```js
-// GPU à-trous: works immediately, live-tunable
+// GPU a-trous: works immediately, live-tunable
 const atrous = PT_LIB.denoise.aTrous({ iterations: 3, phiNormal: 128 });
 pt.setDenoise(atrous);
 atrous.setParams({ iterations: 4, phiDepth: 8 });
-
-// OIDN: needs a WASM build exporting the oidn* C API (not bundled)
-// see vendor/README.md
-pt.setDenoise(PT_LIB.denoise.oidnHook(oidnModule, { hdr: true }));
 ```
 
-## Building
+## Repository layout
 
-```sh
-npm run build     # tools/build-core.mjs + tools/build-dist.mjs  -> dist/
-npm test          # seven headless suites
 ```
-
-`dist/` is generated: `pt_lib.core.js` (registry + GLSL + BVH),
-`pt_lib.esm.js`, `pt_lib.iife.js`, and the hand-written `pt_lib.d.ts`.
+dist/       prebuilt bundles (committed): esm, iife, core, hand-written .d.ts
+src/        the library source (PathTracer, core ingestion/BVH/GLSL, denoise, scenes)
+tools/      build + headless test scripts (plain Node)
+exmaples/   the runnable demo (test.html + GUI.js + demo.css)
+textures/   the demo's assets — blue-noise texture, HDR environment, test.glb
+```
 
 ## Licensing
 
 CC0-1.0 — see [`LICENSE`](./LICENSE) and [`CREDITS.md`](./CREDITS.md). The
 library is a port of an existing Babylon.js path tracer; upstream is CC0 with
-Shadertoy-derived snippets credited in `CREDITS.md`. **Confirm the upstream
-terms before publishing.**
+Shadertoy-derived snippets credited in `CREDITS.md`.
+
+If you are republishing, confirm the upstream terms in `CREDITS.md` first.

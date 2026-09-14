@@ -1,7 +1,7 @@
 {
   "name": "babylon-pathtracer",
   "version": "0.1.0",
-  "description": "Progressive GPU path tracer (Cycles-style) as a Babylon.js plugin: scene-agnostic ingestion, first-hit AOVs, firefly clamping, GPU a-trous and OIDN denoise hooks, reproducible sampling and PNG export.",
+  "description": "Progressive GPU path tracer (Cycles-style) as a Babylon.js plugin: scene-agnostic ingestion, first-hit AOVs, firefly clamping, GPU a-trous denoise, reproducible sampling and PNG export.",
   "license": "CC0-1.0",
   "type": "module",
   "sideEffects": true,
@@ -24,9 +24,8 @@
     "!src/scenes/**/*_Path_Tracing.js",
     "!src/scenes/**/*_Model.js",
     "!src/scenes/gltf-debug/**",
-    "vendor/README.md",
     "README.md",
-    "PT_README.md",
+    "USAGE.md",
     "LICENSE",
     "CREDITS.md"
   ],
@@ -46,8 +45,7 @@
     "webgl2",
     "gpu",
     "renderer",
-    "denoise",
-    "oidn"
+    "denoise"
   ],
   "engines": {
     "node": ">=18"

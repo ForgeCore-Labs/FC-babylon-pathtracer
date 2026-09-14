@@ -116,10 +116,9 @@ if (PT) {
   check("scene adapters are exported",
     PT.scenes && typeof PT.scenes.universal.create === "function" &&
     typeof PT.scenes.gltf.create === "function");
-  check("both denoise backends are exported",
+  check("the denoise backends are exported",
     PT.denoise && typeof PT.denoise.aTrous === "function" &&
-    typeof PT.denoise.oidn === "function" &&
-    typeof PT.denoise.oidnHook === "function");
+    typeof PT.denoise.hook === "function");
   check("it attaches BABYLON.PathTracer", sandbox.BABYLON.PathTracer === PT.PathTracer);
 
   const worker = PT.geometryWorker;

@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1">
+	<title>babylon-pathtracer — demo</title>
+	<link rel="stylesheet" href="demo.css">
+</head>
+
+<body>
+	<canvas id="renderCanvas" touch-action="none"></canvas>
+	<div id="lightIcons"></div>
+
+	<div id="info">loading…</div>
+	<div id="help">
+		drag: look &nbsp;|&nbsp; arrows/WASD: move &nbsp;|&nbsp; Inspector eye toggles sync automatically &nbsp;|&nbsp; material sliders update live; other property edits: press "apply changes"
+	</div>
+
+	<div id="ui">
+		<label>view
+			<select id="uiView">
+				<option value="0">beauty</option>
+				<option value="1">albedo</option>
+				<option value="2">normals</option>
+				<option value="3">direct light</option>
+				<option value="4">depth</option>
+			</select>
+		</label>
+
+		<label>env
+			<select id="uiEnv">
+				<option value="symmetrical_garden_2k.hdr" selected>symmetrical garden (HDR)</option>
+				<option value="none">none</option>
+			</select>
+		</label>
+		<label>max samples
+			<input id="uiSamples" type="number" min="0" step="16" value="256" style="width: 70px">
+		</label>
+		<label>firefly clamp <output id="uiFireflyOut">8</output>
+			<input id="uiFirefly" type="range" min="0" max="50" step="1" value="8">
+		</label>
+		<label>seed
+			<input id="uiSeed" type="number" min="0" step="1" value="0" style="width: 70px">
+		</label>
+		<label><input id="uiAtrous" type="checkbox"> a-trous denoise (GPU)</label>
+		<label>a-trous passes
+			<input id="uiAtrousIters" type="number" min="1" max="6" step="1" value="3" style="width: 70px">
+		</label>
+		<label>a-trous phi normal <output id="uiPhiNOut">128</output>
+			<input id="uiPhiN" type="range" min="0" max="256" step="1" value="128">
+		</label>
+		<label>a-trous phi albedo <output id="uiPhiAOut">32</output>
+			<input id="uiPhiA" type="range" min="0" max="64" step="1" value="32">
+		</label>
+		<label>a-trous phi depth <output id="uiPhiDOut">32</output>
+			<input id="uiPhiD" type="range" min="0" max="64" step="1" value="32">
+		</label>
+		<label>resolution
+			<input id="uiRes" type="range" min="0.25" max="1" step="0.05" value="1">
+		</label>
+		<label>material
+			<select id="uiMaterial">
+				<option value="0">mirror</option>
+				<option value="1" selected>gold</option>
+				<option value="2">red</option>
+				<option value="3">blue</option>
+				<option value="4">green</option>
+			</select>
+		</label>
+		<label>metallic <output id="uiMetalOut">1.00</output>
+			<input id="uiMetal" type="range" min="0" max="1" step="0.01" value="1">
+		</label>
+		<label>roughness <output id="uiRoughOut">0.30</output>
+			<input id="uiRough" type="range" min="0" max="1" step="0.01" value="0.30">
+		</label>
+		<label><input id="uiLights" type="checkbox" checked> show lights</label>
+		<label><input id="uiLightIcons" type="checkbox" checked> light icons</label>
+		<label><input id="uiWorker" type="checkbox" checked> geometry worker</label>
+		<label><input id="uiAovs" type="checkbox"> AOVs (albedo / normal / depth)</label>
+		<label><input id="uiPost" type="checkbox"> vignette (post-process)</label>
+		<label>post strength <output id="uiPostOut">0.60</output>
+			<input id="uiPostAmt" type="range" min="0" max="1" step="0.05" value="0.6">
+		</label>
+		<button id="uiReset">reset</button>
+		<button id="uiRebuild">apply changes</button>
+		<button id="uiExport">export PNG</button>
+	</div>
+
+	<!-- 1. Babylon (the library reads the global BABYLON) + the glTF loader
+	     (only needed when you import a model) + the Inspector. -->
+	<script src="https://cdn.babylonjs.com/babylon.max.js"></script>
+	<script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+	<script src="https://cdn.babylonjs.com/inspector/babylon.inspector.bundle.js"></script>
+
+	<!-- 2. the whole library in one file: GLSL, BVH, ingestion, both denoisers,
+	     and the geometry-worker sources inlined. Exposes window.PT_LIB. -->
+	<script src="../dist/pt_lib.iife.js"></script>
+
+	<!-- 3. build a normal Babylon scene and hand it to the tracer. The control
+	     panel (status line, sliders, light icons, post-process) lives in GUI.js
+	     so this page stays short. -->
+	<script type="module">
+		import { createStatus, createGUI } from './GUI.js';
+
+		const canvas = document.getElementById('renderCanvas');
+		const info = document.getElementById('info');
+
+		// --- diagnostics ---------------------------------------------------
+		// Main-thread watchdog: if this fires, the freeze is JavaScript, not GPU.
+		let lastTick = performance.now();
+		(function tick() {
+			const t = performance.now();
+			if (t - lastTick > 250) {
+				console.log('[pt] MAIN THREAD BLOCKED for ' + Math.round(t - lastTick) + ' ms');
+			}
+			lastTick = t;
+			requestAnimationFrame(tick);
+		})();
+
+		window.addEventListener('error', function (e) {
+			console.log('[pt] window error: ' + (e.message || e));
+		});
+		window.addEventListener('unhandledrejection', function (e) {
+			console.log('[pt] unhandled rejection: ' + (e.reason && e.reason.message ? e.reason.message : e.reason));
+		});
+
+		// --- scene state ---------------------------------------------------
+		let app = null;
+		let sceneRef = null;
+		let envTexture = null;
+		// Ball materials, exposed so the GUI sliders can edit a live PBRMaterial
+		// and exercise the adapter's tMaterialData sync (no re-ingest).
+		let demoMaterials = [];
+
+		// Optional glTF model, imported the normal Babylon way. A .glb is
+		// self-contained (a .gltf would also need its .bin + textures alongside).
+		// Set MODEL_FILE to 'none' to skip the import.
+		const MODEL_ROOT = '../textures/';
+		const MODEL_FILE = 'test.glb';
+
+		// The status line is referenced by create() below, so it has to exist first.
+		const status = createStatus(info, () => app);
+
+		// Assigns (or clears) scene.environmentTexture the normal Babylon way. An
+		// HDR panorama drives IBL and metal reflections; 'none' leaves flat ambient.
+		function setEnvironment(fileName) {
+			if (envTexture) {
+				if (sceneRef && sceneRef.environmentTexture === envTexture) {
+					sceneRef.environmentTexture = null;
+				}
+				envTexture.dispose();
+				envTexture = null;
+			}
+			if (!fileName || fileName === 'none' || !sceneRef) return;
+			const url = '../textures/' + fileName;
+			try {
+				// .hdr = an equirectangular panorama; Babylon bakes it into a cube map.
+				// .env = a prefiltered cube map.
+				const tex = /\.hdr$/i.test(fileName)
+					? new BABYLON.HDRCubeTexture(url, sceneRef, 256)
+					: BABYLON.CubeTexture.CreateFromPrefilteredData(url, sceneRef);
+				envTexture = tex;
+				sceneRef.environmentTexture = tex;
+			} catch (e) {
+				console.warn('[demo] environment load failed:', e && e.message);
+			}
+		}
+
+		// Imports a model and auto-fits it: scaled so its largest dimension is about
+		// 2 world units, resting on the ground, centred behind the spheres. Keeps an
+		// arbitrary asset from coming in comically large or small.
+		async function loadModel(scene, fileName) {
+			if (!fileName || fileName === 'none') return;
+			const result = await BABYLON.SceneLoader.ImportMeshAsync(
+				null, MODEL_ROOT, fileName, scene
+			);
+			const root = result.meshes[0];
+			root.computeWorldMatrix(true);
+			const bounds = root.getHierarchyBoundingVectors(true);
+			const size = bounds.max.subtract(bounds.min);
+			const maxDim = Math.max(size.x, size.y, size.z) || 1;
+			const fit = 2.0 / maxDim;
+
+			root.scaling.setAll(fit);
+			root.position.set(
+				-(bounds.min.x + bounds.max.x) * 0.5 * fit,
+				-bounds.min.y * fit,
+				4.5 - (bounds.min.z + bounds.max.z) * 0.5 * fit
+			);
+		}
+
+		// --- build a normal Babylon scene; the tracer picks it up ----------
+		app = PT_LIB.scenes.universal.create(canvas, {
+			resolutionScale: 1.0,
+			maxSamples: 256,
+			cameraPosition: [0, 2, -9],
+			blueNoiseFile: '../textures/BlueNoise_RGBA256.png',
+
+			// Worker ingest progress (opt-in path), shown in the status line.
+			onIngestProgress: function (p) {
+				const total = p.total || 1;
+				status.set('ingesting — ' + p.phase + ' ' + Math.round((100 * p.done) / total) + '%');
+			},
+
+			// Cap a single sample's luminance (linear HDR) before it joins the
+			// accumulation, to kill high-variance specular fireflies. 0 = off.
+			fireflyClamp: 8,
+
+			setup: async function (scene, camera) {
+				sceneRef = scene;
+				camera.setTarget(new BABYLON.Vector3(0, 1, 0));
+
+				// ---- ground ----
+				const ground = BABYLON.MeshBuilder.CreateBox('ground', {
+					width: 24, height: 0.5, depth: 24
+				}, scene);
+				ground.position.y = -0.25;
+				const groundMat = new BABYLON.StandardMaterial('groundMat', scene);
+				groundMat.diffuseColor = new BABYLON.Color3(0.75, 0.75, 0.78);
+				ground.material = groundMat;
+
+				// ---- a row of spheres, all created Babylon-style ----
+				const palette = [
+					{ color: new BABYLON.Color3(0.95, 0.9, 0.8), metallic: 1.0, roughness: 0.05 }, // mirror
+					{ color: new BABYLON.Color3(0.92, 0.75, 0.25), metallic: 1.0, roughness: 0.30 }, // gold
+					{ color: new BABYLON.Color3(0.85, 0.12, 0.10), metallic: 0.0, roughness: 0.80 }, // red
+					{ color: new BABYLON.Color3(0.15, 0.40, 0.85), metallic: 0.0, roughness: 0.50 }, // blue
+					{ color: new BABYLON.Color3(0.20, 0.75, 0.30), metallic: 0.0, roughness: 0.90 }  // green
+				];
+				const ballMaterials = [];
+				palette.forEach(function (entry, index) {
+					const ball = BABYLON.MeshBuilder.CreateSphere('ball' + index, {
+						diameter: 1.6, segments: 40
+					}, scene);
+					ball.position.set((index - 2) * 2.1, 0.8, 0);
+					const mat = new BABYLON.PBRMaterial('ballMat' + index, scene);
+					mat.albedoColor = entry.color;
+					mat.metallic = entry.metallic;
+					mat.roughness = entry.roughness;
+					ball.material = mat;
+					ballMaterials.push(mat);
+				});
+				demoMaterials = ballMaterials;
+
+				// ---- a small emissive marker ----
+				const lamp = BABYLON.MeshBuilder.CreateSphere('lamp', {
+					diameter: 0.4, segments: 16
+				}, scene);
+				lamp.position.set(0, 2.6, 0);
+				const lampMat = new BABYLON.PBRMaterial('lampMat', scene);
+				lampMat.albedoColor = new BABYLON.Color3(1, 1, 1);
+				lampMat.emissiveColor = new BABYLON.Color3(1, 0.95, 0.85);
+				lampMat.emissiveIntensity = 3.0;
+				lamp.material = lampMat;
+
+				// ---- two coloured lights (Babylon style) ----
+				const key = new BABYLON.PointLight('key', new BABYLON.Vector3(-3, 6, -4), scene);
+				key.intensity = 320;
+				key.diffuse = new BABYLON.Color3(1.0, 0.85, 0.7);
+
+				const fill = new BABYLON.PointLight('fill', new BABYLON.Vector3(4, 5, -2), scene);
+				fill.intensity = 220;
+				fill.diffuse = new BABYLON.Color3(0.4, 0.55, 1.0);
+
+				const ambient = new BABYLON.HemisphericLight('ambient', new BABYLON.Vector3(0, 1, 0), scene);
+				ambient.intensity = 0.25;
+
+				// ---- image-based environment (drives IBL in the tracer) ----
+				setEnvironment(document.getElementById('uiEnv').value);
+
+				// ---- glTF model (imported the normal Babylon way) ----
+				try {
+					await loadModel(scene, MODEL_FILE);
+				} catch (e) {
+					console.warn('[demo] model import skipped:', e && e.message);
+				}
+			}
+		});
+
+		// --- the whole control panel lives in GUI.js -----------------------
+		const gui = createGUI({
+			app: app,
+			canvas: canvas,
+			status: status,
+			getMaterials: () => demoMaterials,
+			setEnvironment: setEnvironment
+		});
+
+		window.app = app;
+		app.ready.then(function () {
+			window.pt = app.pathTracer;
+
+			gui.applyUISettings();
+			gui.attachStatus(app.pathTracer);
+			status.set('warming up');
+
+			// Light icons are a DOM overlay, so they survive the tracer's fullscreen
+			// blit (which runs after scene.render()). Reproject them every frame.
+			app.scene.onAfterRenderObservable.add(gui.updateLightIcons);
+			gui.updateLightIcons();
+
+			// --- diagnostics -------------------------------------------------
+			// Warn when a tracer frame is slow, so a JS-side stall is obvious.
+			let lastFrame = performance.now();
+			app.pathTracer.onProgressObservable.add(function () {
+				const t = performance.now();
+				const dt = t - lastFrame;
+				lastFrame = t;
+				if (dt > 200) console.log('[pt] SLOW tracer frame: ' + Math.round(dt) + ' ms');
+			});
+		}).catch(function (e) {
+			status.set('error: ' + (e && e.message ? e.message : e));
+			info.style.color = '#f66';
+		});
+
+		window.addEventListener('error', function (e) {
+			info.innerHTML = '<span style="color:#f66">' + (e.message || e) + '</span>';
+		});
+	</script>
+</body>
+
+</html>

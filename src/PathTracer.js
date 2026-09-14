@@ -15,7 +15,7 @@
 //   3. screenCopy    -> screenCopyRT                    — snapshot (next frame's previousBuffer)
 //   4. screenResolve -> resolveRT                       — spatial filter + divide by samples (linear HDR)
 //   5. [AOV pass]     -> albedo / normal / depth RTs     — first hit only, on reset frames (optional)
-//   6. [denoise hook] -> beauty texture                 — identity / GPU à-trous / one-shot WASM
+//   6. [denoise hook] -> beauty texture                 — identity / GPU a-trous / one-shot WASM
 //   7. screenOutput  -> null (canvas)                   — exposure / tonemap / gamma
 //
 // Classic-script module: attaches PT_LIB.PathTracer and BABYLON.PathTracer.
@@ -55,9 +55,9 @@
 		//   function (ctx) -> texture | Promise<texture>
 		// with ctx = { engine, scene, pathTracer, beauty, albedo, normal, depth,
 		//              samples, converged, width, height }.
-		// A returned texture filters this frame (GPU à-trous, no readback). A
-		// returned promise is adopted when it resolves — the one-shot readback /
-		// WASM case (OIDN). null = identity, no extra work.
+		// A returned texture filters this frame (GPU a-trous, no readback). A
+		// A returned promise is adopted when it resolves — the one-shot readback
+		// case. null = identity, no extra work.
 		denoise: null,
 		// Emit first-hit AOVs (albedo / normal / depth) as float render targets for
 		// the denoise hook (implied by a hook) or for export. Costs a primary-ray
@@ -810,7 +810,7 @@
 			return beauty;
 		}
 
-		// Async hook (e.g. the one-shot OIDN readback): adopt when it resolves,
+		// Async hook (e.g. the one-shot readback): adopt when it resolves,
 		// keep showing the last result (or the raw resolve) meanwhile.
 		if (result && typeof result.then === 'function') {
 			var self = this;
@@ -1300,7 +1300,7 @@
 				console.warn(
 					"[pt_lib] PathTracer may not render correctly: " +
 						issues.join("; ") +
-						". See PT_README.md (Supported subset)."
+					". See USAGE.md (Supported subset)."
 				);
 			}
 		}
@@ -1633,7 +1633,7 @@
 				"[pt_lib] scene.imageProcessingConfiguration: " +
 					ignored.join(", ") +
 					" are not applied to the tonemap (exposure, contrast and the " +
-					"tone-mapping curve are). See PT_README.md (Supported subset)."
+					"tone-mapping curve are). See USAGE.md (Supported subset)."
 			);
 		}
 	};

@@ -30,7 +30,7 @@ const SOURCES = [
   "src/core/geometry-packing.js",
   "src/core/geometry-worker.js",
   "src/core/ingest.js",
-  "src/denoise/oidn.js",
+  "src/denoise/hook.js",
   "src/denoise/atrous.js",
   "src/PathTracer.js",
   "src/scenes/gltf/GLTFModelPathTracing_FragmentShader.js",
