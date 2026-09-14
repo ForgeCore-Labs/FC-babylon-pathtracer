@@ -3,6 +3,14 @@
   "version": "0.1.0",
   "description": "Progressive GPU path tracer (Cycles-style) as a Babylon.js plugin: scene-agnostic ingestion, first-hit AOVs, firefly clamping, GPU a-trous denoise, reproducible sampling and PNG export.",
   "license": "CC0-1.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ForgeCore-Labs/FC-babylon-pathtracer.git"
+  },
+  "homepage": "https://github.com/ForgeCore-Labs/FC-babylon-pathtracer#readme",
+  "bugs": {
+    "url": "https://github.com/ForgeCore-Labs/FC-babylon-pathtracer/issues"
+  },
   "type": "module",
   "sideEffects": true,
   "main": "./dist/pt_lib.esm.js",
