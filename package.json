@@ -34,7 +34,8 @@
   },
   "scripts": {
     "build": "node tools/build-core.mjs && node tools/build-dist.mjs",
-    "test": "node tools/verify-m2.mjs && node tools/test-ingest.mjs && node tools/test-lifecycle.mjs && node tools/test-support.mjs && node tools/test-worker.mjs && node tools/test-denoise.mjs && node tools/test-dist.mjs"
+    "test": "node tools/verify-m2.mjs && node tools/test-ingest.mjs && node tools/test-lifecycle.mjs && node tools/test-support.mjs && node tools/test-worker.mjs && node tools/test-denoise.mjs && node tools/test-dist.mjs",
+    "prepublishOnly": "npm run build && npm test"
   },
   "keywords": [
     "babylonjs",
