@@ -23,6 +23,10 @@ Usage guide and settings reference: **[`USAGE.md`](./USAGE.md)**.
 
 ## Start here
 
+> This section is for a **clone of the repo**. The npm package ships the library
+> only (`dist/` + `src/`) — it does not include the demo, the textures or the
+> test scripts.
+
 ### 1. Run the demo
 
 Serve the **repo root** over HTTP, then open the demo page:
